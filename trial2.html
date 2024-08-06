@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>West Pokot Water and Sanitation Web Map</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Leaflet CSS -->
+    <link href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" rel="stylesheet"/>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #91bee2;
+            color: white;
+            padding: 1em;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 1000;
+            height: 30px;
+        }
+        header img {
+            width: 80px; /* Enlarged logo width */
+            height: 80px; /* Enlarged logo height */
+            margin-right: 15px; /* Space between logo and title */
+        }
+        main {
+            display: flex;
+            margin: 0;
+            position: relative;
+            height: 600px;
+        }
+        #map {
+            flex: 1; /* Make map take available space */
+            border: 5px solid #000; /* Frame around the map */
+            position: relative;
+        }
+        .overlay-controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #fff;
+            padding: 10px;
+            border: 2px solid #000; /* Black border for separation */
+            border-radius: 5px;
+            z-index: 1000;
+            max-width: 250px; /* Limit width of the panel */
+        }
+        .overlay-controls h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .overlay-controls input[type="checkbox"] {
+            margin-right: 5px;
+        }
+        .separator {
+            border-left: 5px solid black; /* Thick black line */
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 270px; /* Adjust based on width of the overlay-controls */
+            width: 0;
+            z-index: 1000;
+        }
+        .north-arrow {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: url('https://upload.wikimedia.org/wikipedia/commons/6/6a/North_arrow_01.svg') no-repeat center;
+            background-size: contain;
+            width: 40px;
+            height: 40px;
+        }
+        footer {
+            background-color: #00796b;
+            color: white;
+            padding: 1em;
+            text-align: center;
+            position: relative;
+            z-index: 1000;
+            height: 30px;
+        }
+        .footer_section {
+            display: flex;
+            justify-content: space-around;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .footer_section ul {
+            padding: 0;
+            margin: 0;
+        }
+        .footer_section li {
+            margin: 0.5em 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR2g9T8zt22GBgyWEveBs2Q1JUQDu8wVBDsDg&s" alt="Company Logo">
+        <h1>West Pokot Water and Sanitation Web Map</h1>
+    </header>
+    <main>
+        <div id="map">
+            <div class="north-arrow"></div> <!-- North arrow -->
+            <div class="overlay-controls">
+                <h3>Legend</h3>
+                <input type="checkbox" id="osm" name="Open Street Map" checked onchange="toggleLayer(event);">
+                <label for="osm">Open Street Map</label>
+                <br>
+                <input type="checkbox" id="county" name="West Pokot County" checked onchange="toggleLayer(event);">
+                <label for="county">West Pokot County</label>
+                <br>
+                <input type="checkbox" id="hospitals" name="Hospitals" checked onchange="toggleLayer(event);">
+                <label for="hospitals">Hospitals</label>
+                <br>
+                <input type="checkbox" id="towns" name="Towns" checked onchange="toggleLayer(event);">
+                <label for="towns">Towns</label>
+                <br>
+                <input type="checkbox" id="roads" name="Roads" checked onchange="toggleLayer(event);">
+                <label for="roads">Roads</label>
+                <br>
+                <input type="checkbox" id="rivers" name="Rivers" checked onchange="toggleLayer(event);">
+                <label for="rivers">Rivers</label>
+            </div>
+            <div class="separator"></div> <!-- Separator line -->
+        </div>
+    </main>
+    <footer>
+        <div class="footer_section">
+            <ul class="contributors">CONTRIBUTORS
+                <li>Irine C Toroina</li>
+            </ul>
+            <ul class="authors">AUTHORS
+                <li>OPEN STREET</li>
+            </ul>
+            <ul class="marginal_information">MARGINAL INFORMATION
+                <li>West Pokot Water and Sanitation Web Map</li>
+            </ul>
+        </div>
+    </footer>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // Initialize the map
+        var lat = 1.654371;
+        var lng = 35.218832;
+        var map = L.map('map').setView([lat, lng], 12);
+
+        // Add a base layer (OpenStreetMap)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Define GeoServer WMS layers
+        var layers = {
+            'Counties': L.tileLayer.wms('http://localhost:8080/geoserver/water_sanitation/wms', {
+                layers: 'water_sanitation:westpokotcountyboundary',
+                format: 'image/png',
+                transparent: true,
+                version: "1.1.0",
+                attribution: 'GeoServer'
+            }),
+            'Hospitals': L.tileLayer.wms('http://localhost:8080/geoserver/water_sanitation/wms', {
+                layers: 'water_sanitation:wphospitals',
+                format: 'image/png',
+                transparent: true,
+                version: "1.1.0",
+                attribution: 'GeoServer'
+            }),
+            'Towns': L.tileLayer.wms('http://localhost:8080/geoserver/water_sanitation/wms', {
+                layers: 'water_sanitation:wptowns',
+                format: 'image/png',
+                transparent: true,
+                version: "1.1.0",
+                attribution: 'GeoServer'
+            }),
+            'Roads': L.tileLayer.wms('http://localhost:8080/geoserver/water_sanitation/wms', {
+                layers: 'water_sanitation:wproads',
+                format: 'image/png',
+                transparent: true,
+                version: "1.1.0",
+                attribution: 'GeoServer'
+            }),
+            'Rivers': L.tileLayer.wms('http://localhost:8080/geoserver/water_sanitation/wms', {
+                layers: 'water_sanitation:wprivers',
+                format: 'image/png',
+                transparent: true,
+                version: "1.1.0",
+                attribution: 'GeoServer'
+            })
+        };
+
+        // Add layer control to the map
+        L.control.layers(null, layers).addTo(map);
+
+        // Add all layers to the map by default
+        Object.values(layers).forEach(layer => layer.addTo(map));
+
+        // Toggle layer visibility
+        function toggleLayer(event) {
+            var layerId = event.target.id;
+            if (layers[layerId]) {
+                if (event.target.checked) {
+                    layers[layerId].addTo(map);
+                } else {
+                    map.removeLayer(layers[layerId]);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
